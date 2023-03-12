@@ -44,7 +44,7 @@ Look for errors that can cause performance issues.
 The example above includes the oom-killer, and TCP dropping a request.
         """.strip()
     ),
-    "vmstat1": Command(
+    "vmstat": Command(
         subprocess_shell("vmstat 1 3"),
         """
 # vmstat 1 10
@@ -75,7 +75,7 @@ and stolen time (by other guests, or with Xen, the guest’s own isolated driver
         """.strip()
     ),
     "mpstat": Command(
-        subprocess_shell("mpstat -P ALL 1 10"),
+        subprocess_shell("mpstat -P ALL 1 3"),
         """
 # mpstat -P ALL 1 10
 
@@ -196,6 +196,19 @@ The example above shows just one new TCP connection per-second.
     ),
 }
 
+for _name, _com in (
+            ("vmstat", "vmstat 1"),
+            ("mpstat", "mpstat -P ALL 1"),
+            ("pidstat", "pidstat 1"),
+            ("iostat", "iostat -xz 1"),
+            ("sar", "sar -n DEV 1"),
+            ("sar-tcp", "sar -n TCP,ETCP 1")
+        ):
+    commands[_name + '-nonstop'] = Command(
+        subprocess_shell(_com), commands[_name].help
+    )
+
+
 async def handle(request):
     cmd = commands[request.query.get("cmd")]
     process = await cmd.gen_process()
@@ -233,14 +246,11 @@ async def handle_err(request):
                 break
             yield line
 
-    # Set up the response headers for streaming
-    headers = {
+    # Return the streaming response
+    return web.Response(body=stream_output(), headers={
         'Content-Type': 'text/plain',
         'Transfer-Encoding': 'chunked',
-    }
-
-    # Return the streaming response
-    return web.Response(body=stream_output(), headers=headers)
+    })
 
 async def handle_kill(request):
     rand = request.query.get('rand')
