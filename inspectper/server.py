@@ -75,7 +75,7 @@ and stolen time (by other guests, or with Xen, the guest’s own isolated driver
         """.strip()
     ),
     "mpstat": Command(
-        subprocess_shell("mpstat -P ALL 1 3"),
+        subprocess_shell("mpstat -P ALL 1 10"),
         """
 # mpstat -P ALL 1 10
 
