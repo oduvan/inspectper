@@ -221,6 +221,7 @@ async def handle(request):
     return web.Response(body=stream_output(), headers={
         'Content-Type': 'text/plain',
         'Transfer-Encoding': 'chunked',
+        'X-Content-Type-Options': 'nosniff',
     })
 
 async def handle_err(request):
@@ -245,6 +246,7 @@ async def handle_err(request):
     return web.Response(body=stream_output(), headers={
         'Content-Type': 'text/plain',
         'Transfer-Encoding': 'chunked',
+        'X-Content-Type-Options': 'nosniff',
     })
 
 async def handle_kill(request):
