@@ -1,10 +1,12 @@
 import asyncio
-import aiohttp
-from aiohttp import web
 from collections import namedtuple
 import json
 import os
 import argparse
+
+import psutil
+import aiohttp
+from aiohttp import web
 
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -47,14 +49,7 @@ The example above includes the oom-killer, and TCP dropping a request.
     "vmstat": Command(
         subprocess_shell("vmstat 1 3"),
         """
-# vmstat 1 10
-
-It prints a summary of key server statistics on each line.
-
-vmstat was run with an argument of 1, to print one second summaries.
-The first line of output (in this version of vmstat) has some columns
-that show the average since boot, instead of the previous second. 
-For now, skip the first line, unless you want to learn and remember which column is which.
+# vmstat 1 3
 
 * r: Number of processes running on CPU and waiting for a turn. 
 This provides a better signal than load averages for determining CPU saturation,
@@ -136,7 +131,7 @@ so that the application doesn’t block and suffer the latency directly
     "free": Command(
         subprocess_shell("free -m"),
         """
-# mpstat -P ALL 1 10
+# free -m
 
 The right two columns show:
 
@@ -256,7 +251,14 @@ async def handle_kill(request):
     rand = request.query.get('rand')
     process = process_dict.pop(rand, None)
     if process:
-        process.kill()
+        parent = psutil.Process(process.pid)
+        for child in parent.children(recursive=True):
+            child.kill()
+
+        try:
+            process.kill()
+        except Exception:
+            pass
 
     return web.Response(text='Process killed\n')
 
