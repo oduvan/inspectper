@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>My Page</title>
+	<style>
+		pre {margin:0}
+		.top {
+			position: fixed;
+		    width: 100%;
+		    background-color: white;
+		}
+	</style>
+	<script>
+		var commands = !!!DATA!!!;
+		function getRandomInt() {
+		  return Math.floor(Math.random() * 10**10);
+		}
+		var outputs = [];
+		var last_output_pre = {};
+		var errs = {};
+		var last_err_pre = {};
+		const min_num_size = 3;
+		function add_result(i, line, style='black') {
+			var pre = document.createElement("pre");
+			pre.innerHTML = '[' + i.toString().padStart(min_num_size, '0') + ']' + line;
+			pre.style.color = style;
+			document.getElementById("result").appendChild(pre);
+			return pre;
+		}
+
+		function run_err(cur_i, cur_rand) {
+			var xhr = new XMLHttpRequest();
+			errs[cur_i] = ''
+			xhr.onreadystatechange = function() {
+				if (xhr.readyState === 3 || xhr.readyState === 4) {
+					const xhr_output = xhr.responseText.slice(errs[cur_i].length);
+
+					var cur_pre = null;
+					if (!errs[cur_i].endsWith('\n')) {
+						cur_pre = last_err_pre[cur_i]
+					}
+
+					errs[cur_i] = xhr.responseText;
+					const lines = xhr_output.split('\n');
+					for (var i=0; i < lines.length; i++) {
+						if (cur_pre) {
+							cur_pre.innerHTML += lines[i];
+							cur_pre = null
+						} else {
+							last_err_pre[cur_i] = add_result(cur_i, lines[i], 'red');
+						}
+					}
+				}
+				if (xhr.readyState === 4) {
+					if (last_err_pre[cur_i].innerHTML.trim().length === min_num_size + 2) {
+						last_err_pre[cur_i].parentNode.removeChild(last_err_pre[cur_i]);
+					}
+				}
+			};
+
+			// Open a new AJAX request
+			xhr.open("GET", "/err/?rand=" + cur_rand, true);
+
+			// Send the AJAX request
+			xhr.send();
+		}
+
+		function run() {
+			outputs.push('')
+			const cur_i = outputs.length - 1;
+			const cur_rand = getRandomInt();
+
+			run_err(cur_i, cur_rand);
+
+			const command = document.getElementById("commands").value;
+			add_result(cur_i, command, 'green');
+			const help = commands[command].split('\n');
+			for (var i=0; i<help.length; i+=1) {
+				add_result(cur_i, help[i], 'green');
+			}
+
+			const kill_button = document.createElement("button");
+			kill_button.innerHTML = cur_i.toString().padStart(min_num_size, '0');
+			kill_button.addEventListener("click", function() {
+		    	let xhr = new XMLHttpRequest();
+
+				xhr.open("GET", "/kill/?rand=" + cur_rand);
+				xhr.send();
+		  	});
+		  	document.getElementById("kills").appendChild(kill_button);
+
+			// Create a new XMLHttpRequest object
+			var xhr = new XMLHttpRequest();
+
+			// Define the callback function for when the response is received
+			xhr.onreadystatechange = function() {
+				if (xhr.readyState === 3 || xhr.readyState === 4) {
+					const xhr_output = xhr.responseText.slice(outputs[cur_i].length);
+
+					var cur_pre = null;
+					if (!outputs[cur_i].endsWith('\n')) {
+						cur_pre = last_output_pre[cur_i];
+					}
+
+					outputs[cur_i] = xhr.responseText;
+					const lines = xhr_output.split('\n');
+					for (var i=0; i < lines.length; i++) {
+						if (cur_pre) {
+							cur_pre.innerHTML += lines[i];
+							cur_pre = null
+						} else {
+							last_output_pre[cur_i] = add_result(cur_i, lines[i]);
+						}
+					}
+				}
+				if (xhr.readyState === 4) {
+					if (last_output_pre[cur_i].innerHTML.trim().length === min_num_size + 2) {
+						last_output_pre[cur_i].parentNode.removeChild(last_output_pre[cur_i]);
+					}
+					kill_button.parentNode.removeChild(kill_button);
+				}
+			};
+
+
+
+			// Open a new AJAX request
+			xhr.open("GET", "/run/?cmd=" + command + "&rand=" + cur_rand, true);
+
+			// Send the AJAX request
+			xhr.send();
+		}
+		function setup() {
+			const select = document.getElementById("commands");
+			const options = Object.keys(commands);
+
+			for (let i = 0; i < options.length; i++) {
+			    let option = document.createElement("option");
+			    option.text = options[i];
+			    select.add(option);
+			}
+		}
+	</script>
+</head>
+<body>
+	<div class="top">
+		<select id="commands"></select>
+		<button onclick="run()">Run</button>
+		Kill: <span id="kills"></span>
+	</div>
+	<div id="result">
+
+	</div>
+	<script type="text/javascript">setup();</script>
+</body>
+</html>
