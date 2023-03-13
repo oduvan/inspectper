@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>My Page</title>
+	<title>Performance Inspector</title>
 	<style>
 		pre {margin:0}
 		.top {
@@ -9,9 +9,14 @@
 		    width: 100%;
 		    background-color: white;
 		}
+
+		#result {
+			padding-top: 30px;
+		}
 	</style>
 	<script>
-		var commands = !!!DATA!!!;
+		var commands = !!!DATA-HELP!!!;
+		var commands_shorts = !!!DATA-SHORT!!!;
 		function getRandomInt() {
 		  return Math.floor(Math.random() * 10**10);
 		}
@@ -25,7 +30,9 @@
 			pre.innerHTML = '[' + i.toString().padStart(min_num_size, '0') + ']' + line;
 			pre.style.color = style;
 			document.getElementById("result").appendChild(pre);
-			document.documentElement.scrollTop = document.documentElement.scrollHeight;
+			if (document.getElementById("follow_output").checked) {
+				document.documentElement.scrollTop = document.documentElement.scrollHeight;
+			}
 			return pre;
 		}
 
@@ -42,7 +49,10 @@
 					}
 
 					errs[cur_i] = xhr.responseText;
-					const lines = xhr_output.split('\n');
+					let lines = xhr_output.split('\n');
+					if (lines.length && lines[lines.length - 1] === '') {
+						lines = lines.slice(0, -1);
+					}	
 					for (var i=0; i < lines.length; i++) {
 						if (cur_pre) {
 							cur_pre.innerHTML += lines[i];
@@ -53,7 +63,7 @@
 					}
 				}
 				if (xhr.readyState === 4) {
-					if (last_err_pre[cur_i].innerHTML.trim().length === min_num_size + 2) {
+					if (last_err_pre[cur_i] && last_err_pre[cur_i].innerHTML.trim().length === min_num_size + 2) {
 						last_err_pre[cur_i].parentNode.removeChild(last_err_pre[cur_i]);
 					}
 				}
@@ -104,7 +114,11 @@
 					}
 
 					outputs[cur_i] = xhr.responseText;
-					const lines = xhr_output.split('\n');
+					let lines = xhr_output.split('\n');
+					if (lines.length && lines[lines.length - 1] === '') {
+						lines = lines.slice(0, -1);
+					}
+
 					for (var i=0; i < lines.length; i++) {
 						if (cur_pre) {
 							cur_pre.innerHTML += lines[i];
@@ -115,7 +129,7 @@
 					}
 				}
 				if (xhr.readyState === 4) {
-					if (last_output_pre[cur_i].innerHTML.trim().length === min_num_size + 2) {
+					if (last_output_pre[cur_i] && last_output_pre[cur_i].innerHTML.trim().length === min_num_size + 2) {
 						last_output_pre[cur_i].parentNode.removeChild(last_output_pre[cur_i]);
 					}
 					kill_button.parentNode.removeChild(kill_button);
@@ -136,7 +150,8 @@
 
 			for (let i = 0; i < options.length; i++) {
 			    let option = document.createElement("option");
-			    option.text = options[i];
+			    option.text = options[i] + ': ' + commands_shorts[options[i]];
+			    option.setAttribute("value", options[i]);
 			    select.add(option);
 			}
 		}
@@ -144,6 +159,7 @@
 </head>
 <body>
 	<div class="top">
+		<input type="checkbox" id="follow_output" checked="checked"><label for="follow_output">Follow</label>
 		<select id="commands"></select>
 		<button onclick="run()">Run</button>
 		Kill: <span id="kills"></span>
