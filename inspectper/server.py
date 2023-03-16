@@ -101,3 +101,6 @@ parser.add_argument('--port', type=int, default=8080, help='port for the server'
 def main():
     args = parser.parse_args()
     web.run_app(app, host='127.0.0.1', port=args.port)
+
+if __name__ == 'main':
+    main()
